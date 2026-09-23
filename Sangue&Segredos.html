@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-stone-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caso Annelise Vergara - Dashboard de Investigação RPG</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Typography Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        blood: {
+                            500: '#dc2626',
+                            600: '#b91c1c',
+                            700: '#991b1b',
+                            900: '#450a0a'
+                        },
+                        pinkA: {
+                            400: '#f472b6',
+                            500: '#ec4899',
+                            600: '#db2777',
+                            800: '#9d174d',
+                            950: '#500724'
+                        }
+                    },
+                    fontFamily: {
+                        typewriter: ['"Courier Prime"', 'monospace'],
+                        hand: ['"Caveat"', 'cursive'],
+                        sans: ['"Montserrat"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .cork-board {
+            background-color: #0c0a09;
+            background-image: 
+                radial-gradient(rgba(219, 39, 119, 0.08) 1px, transparent 0),
+                radial-gradient(rgba(0, 0, 0, 0.85) 1px, transparent 0);
+            background-size: 24px 24px;
+            background-position: 0 0, 12px 12px;
+        }
+
+        .polaroid {
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.85);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .polaroid:hover {
+            transform: scale(1.03) rotate(0deg) !important;
+            z-index: 35 !important;
+            box-shadow: 0 16px 40px rgba(219, 39, 119, 0.4);
+        }
+
+        .paper-note {
+            background: #fef3c7;
+            color: #1c1917;
+            box-shadow: 4px 8px 25px rgba(0,0,0,0.75);
+        }
+
+        .tape {
+            background-color: rgba(254, 243, 199, 0.65);
+            backdrop-filter: blur(1px);
+        }
+
+        #string-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .pin {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.9);
+            z-index: 25;
+        }
+
+        .pin-red { background: radial-gradient(circle at 30% 30%, #f87171, #991b1b); }
+        .pin-pink { background: radial-gradient(circle at 30% 30%, #f472b6, #831843); }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0c0a09; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #db2777; }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans cork-board text-slate-100 overflow-x-hidden selection:bg-pink-900 selection:text-pink-200">
+
+    <header class="bg-stone-900/95 border-b border-pink-900/50 sticky top-0 z-50 backdrop-blur-md px-4 py-3 flex flex-wrap justify-between items-center gap-3 shadow-2xl">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-lg bg-pink-950 border border-pink-600 flex items-center justify-center text-pink-400 font-bold text-xl shadow-lg">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <div>
+                <h1 class="font-bold tracking-wide text-sm sm:text-base text-slate-100 flex items-center gap-2 font-typewriter">
+                    O DESAPARECIMENTO DE <span class="text-pink-500 underline decoration-pink-700">ANNELISE VERGARA</span>
+                </h1>
+                <p class="text-[10px] text-slate-400 font-typewriter">Mural de Investigação RPG - Rosewood High</p>
+            </div>
+        </div>
+
+        <!-- Direct Master Mode Toggle -->
+        <div class="flex items-center gap-3 bg-stone-950 border border-pink-900/60 p-1.5 rounded-lg">
+            <span class="text-xs font-typewriter text-slate-300 flex items-center gap-1.5 pl-1">
+                <i class="fa-solid fa-crown text-pink-500"></i> Modo Mestre / Edição:
+            </span>
+            <button onclick="toggleMasterMode()" id="master-toggle-btn" class="bg-pink-700 hover:bg-pink-600 text-white font-bold text-xs px-3 py-1 rounded font-typewriter transition flex items-center gap-1.5 shadow">
+                <i class="fa-solid fa-toggle-on" id="master-icon"></i> <span id="master-status-text">ATIVADO</span>
+            </button>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="w-full lg:w-auto flex overflow-x-auto space-x-1 border-t border-stone-800 lg:border-none pt-2 lg:pt-0 font-typewriter text-xs">
+            <button onclick="switchTab('board')" id="tab-board" class="nav-btn px-3 py-1.5 rounded-t bg-pink-700 text-white font-bold flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-map"></i> Mural
+            </button>
+            <button onclick="switchTab('suspects')" id="tab-suspects" class="nav-btn px-3 py-1.5 rounded-t bg-stone-800 text-slate-300 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-users-viewfinder"></i> Suspeitos
+            </button>
+            <button onclick="switchTab('transcript')" id="tab-transcript" class="nav-btn px-3 py-1.5 rounded-t bg-stone-800 text-slate-300 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-file-audio"></i> Interrogatório
+            </button>
+            <button onclick="switchTab('diary')" id="tab-diary" class="nav-btn px-3 py-1.5 rounded-t bg-stone-800 text-slate-300 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-book-journal-whills"></i> Diário de Annelise
+            </button>
+            <button onclick="switchTab('map')" id="tab-map" class="nav-btn px-3 py-1.5 rounded-t bg-stone-800 text-slate-300 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-location-dot"></i> Mapa
+            </button>
+            <button onclick="switchTab('cipher')" id="tab-cipher" class="nav-btn px-3 py-1.5 rounded-t bg-stone-800 text-slate-300 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-key"></i> Decodificador
+            </button>
+            <button onclick="switchTab('notes')" id="tab-notes" class="nav-btn px-3 py-1.5 rounded-t bg-stone-800 text-slate-300 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-pen-to-square"></i> Bloco de Notas
+            </button>
+        </nav>
+    </header>
+
+    <div class="bg-gradient-to-r from-stone-950 via-pink-950/80 to-stone-950 border-b border-pink-900/50 px-4 py-2 text-center relative flex justify-between items-center text-xs sm:text-sm font-typewriter">
+        <div class="flex items-center gap-2 text-pink-400 mx-auto animate-pulse">
+            <i class="fa-solid fa-envelope text-pink-500"></i>
+            <span id="a-threat-display" class="italic">"Pensei que boas garotas não guardassem segredos macabros. - A"</span>
+        </div>
+        <button onclick="triggerAMessage()" class="text-[10px] bg-pink-950 hover:bg-pink-900 text-pink-200 border border-pink-700 px-2.5 py-1 rounded transition whitespace-nowrap">
+            <i class="fa-solid fa-rotate"></i> Nova Ameaça
+        </button>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 relative p-3 sm:p-6 max-w-7xl mx-auto w-full overflow-y-auto">
+
+        <section id="sec-board" class="tab-content relative min-h-[620px] w-full rounded-xl p-4 bg-stone-950/70 border border-stone-800 shadow-2xl">
+            <canvas id="string-canvas"></canvas>
+
+            <div class="flex flex-wrap justify-between items-center mb-6 relative z-20 gap-2">
+                <div>
+                    <h2 class="text-lg font-bold font-typewriter text-pink-300 flex items-center gap-2">
+                        <i class="fa-solid fa-thumbtack text-pink-600"></i> Mural de Evidências e Conexões
+                    </h2>
+                    <p class="text-xs text-slate-400 font-typewriter">Clique em dois elementos para traçar ou remover o fio vermelho.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="clearStrings()" class="text-xs bg-stone-800 hover:bg-stone-700 text-slate-300 px-3 py-1.5 rounded border border-stone-700 font-typewriter">
+                        <i class="fa-solid fa-scissors text-red-400"></i> Cortar Fios
+                    </button>
+                </div>
+            </div>
+
+            <!-- Evidence Board Grid -->
+            <div id="board-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-20">
+                
+                <!-- Polaroid: Annelise Vergara -->
+                <div id="pin-annelise" onclick="selectPin('pin-annelise')" class="polaroid cursor-pointer relative rotate-[-2deg] p-3 rounded-sm flex flex-col justify-between">
+                    <div class="pin pin-pink"></div>
+                    <div class="tape absolute -top-3 left-4 w-12 h-4 rotate-[-10deg]"></div>
+                    <div class="relative group bg-stone-900 h-44 overflow-hidden rounded border border-stone-200 flex items-center justify-center">
+                        <img id="img-annelise" src="" alt="Annelise Vergara" class="w-full h-full object-cover hidden">
+                        <div id="placeholder-annelise" class="flex flex-col items-center justify-center text-slate-400 p-2 text-center">
+                            <i class="fa-solid fa-user-ghost text-4xl mb-2 text-pink-500/80"></i>
+                            <span class="text-[11px] font-typewriter font-bold">Annelise Vergara</span>
+                            <span class="text-[9px] text-slate-500 font-typewriter">(Sem Foto)</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-center">
+                        <span class="font-hand text-2xl font-bold text-slate-900 block leading-tight">Annelise Vergara</span>
+                        <span class="font-typewriter text-[9px] text-pink-700 uppercase font-bold tracking-widest">[ VÍTIMA DESAPARECIDA ]</span>
+                    </div>
+                    
+                    <button onclick="openPhotoUploader('annelise', 'Annelise Vergara'); event.stopPropagation();" class="master-btn mt-2 w-full text-xs bg-pink-700 hover:bg-pink-600 text-white font-bold py-1.5 rounded font-typewriter shadow-md transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-camera"></i> 📷 Trocar Foto
+                    </button>
+                </div>
+
+                <!-- Polaroid: Thomas -->
+                <div id="pin-thomas" onclick="selectPin('pin-thomas')" class="polaroid cursor-pointer relative rotate-[3deg] p-3 rounded-sm flex flex-col justify-between">
+                    <div class="pin pin-red"></div>
+                    <div class="tape absolute -top-3 right-4 w-12 h-4 rotate-[12deg]"></div>
+                    <div class="relative group bg-stone-900 h-44 overflow-hidden rounded border border-stone-200 flex items-center justify-center">
+                        <img id="img-thomas" src="" alt="Thomas" class="w-full h-full object-cover hidden">
+                        <div id="placeholder-thomas" class="flex flex-col items-center justify-center text-slate-400 p-2 text-center">
+                            <i class="fa-solid fa-user-secret text-4xl mb-2 text-red-500/80"></i>
+                            <span class="text-[11px] font-typewriter font-bold">Thomas (Colega)</span>
+                            <span class="text-[9px] text-slate-500 font-typewriter">(Sem Foto)</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-center">
+                        <span class="font-hand text-2xl font-bold text-slate-900 block leading-tight">Thomas (Colega)</span>
+                        <span class="font-typewriter text-[9px] text-red-700 uppercase font-bold tracking-widest">[ SUSPEITO PRINCIPAL ]</span>
+                    </div>
+
+                    <button onclick="openPhotoUploader('thomas', 'Thomas (Colega)'); event.stopPropagation();" class="master-btn mt-2 w-full text-xs bg-pink-700 hover:bg-pink-600 text-white font-bold py-1.5 rounded font-typewriter shadow-md transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-camera"></i> 📷 Trocar Foto
+                    </button>
+                </div>
+
+                <!-- Polaroid: Maitê Vandewell -->
+                <div id="pin-maite" onclick="selectPin('pin-maite')" class="polaroid cursor-pointer relative rotate-[-3deg] p-3 rounded-sm flex flex-col justify-between">
+                    <div class="pin pin-pink"></div>
+                    <div class="relative group bg-stone-900 h-44 overflow-hidden rounded border border-stone-200 flex items-center justify-center">
+                        <img id="img-maite" src="" alt="Maitê Vandewell" class="w-full h-full object-cover hidden">
+                        <div id="placeholder-maite" class="flex flex-col items-center justify-center text-slate-400 p-2 text-center">
+                            <i class="fa-solid fa-user-ninja text-4xl mb-2 text-amber-500/80"></i>
+                            <span class="text-[11px] font-typewriter font-bold">Maitê Vandewell</span>
+                            <span class="text-[9px] text-slate-500 font-typewriter">(Sem Foto)</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-center">
+                        <span class="font-hand text-2xl font-bold text-slate-900 block leading-tight">Maitê Vandewell</span>
+                        <span class="font-typewriter text-[9px] text-amber-800 uppercase font-bold tracking-widest">[ VÍTIMA DE BULLYING ]</span>
+                    </div>
+
+                    <button onclick="openPhotoUploader('maite', 'Maitê Vandewell'); event.stopPropagation();" class="master-btn mt-2 w-full text-xs bg-pink-700 hover:bg-pink-600 text-white font-bold py-1.5 rounded font-typewriter shadow-md transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-camera"></i> 📷 Trocar Foto
+                    </button>
+                </div>
+
+                <!-- Paper Note: Interrogatório / Floresta -->
+                <div id="pin-note1" onclick="selectPin('pin-note1')" class="paper-note p-4 rounded-sm cursor-pointer relative rotate-[2deg] flex flex-col justify-between">
+                    <div class="pin pin-red"></div>
+                    <div class="tape absolute -top-3 left-8 w-12 h-4 rotate-[-4deg]"></div>
+                    <div>
+                        <span class="font-typewriter text-xs font-bold text-red-900 block border-b border-red-900/30 pb-1 mb-2">
+                            <i class="fa-solid fa-tree"></i> AVISTAMENTO NA FLORESTA
+                        </span>
+                        <p class="font-hand text-xl leading-snug text-stone-900">
+                            "Thomas foi visto conversando com Annelise perto da floresta às 22h15 na noite do desaparecimento."
+                        </p>
+                    </div>
+                    <div class="mt-3 text-right border-t border-stone-800/20 pt-1">
+                        <span class="font-typewriter text-[10px] text-stone-700 block font-bold">Relatório da Polícia</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="sec-suspects" class="tab-content hidden space-y-6">
+            <div class="border-b border-stone-800 pb-3 flex justify-between items-center flex-wrap gap-2">
+                <div>
+                    <h2 class="text-lg font-bold font-typewriter text-pink-400 flex items-center gap-2">
+                        <i class="fa-solid fa-folder-closed text-pink-600"></i> Dossiês Confidenciais dos Suspeitos
+                    </h2>
+                    <span class="text-xs font-typewriter text-slate-400">Arquivos do Caso</span>
+                </div>
+                
+                <!-- Botão Adicionar Novo Suspeito -->
+                <button onclick="openAddSuspectModal()" class="master-btn bg-pink-700 hover:bg-pink-600 text-white font-bold text-xs px-4 py-2 rounded font-typewriter shadow-lg transition flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> + Adicionar Novo Suspeito
+                </button>
+            </div>
+
+            <div id="suspects-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- Suspect File: Thomas -->
+                <div class="bg-stone-900 border-l-4 border-red-600 rounded-r-xl p-5 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold font-typewriter text-lg text-slate-100">Thomas</h3>
+                                <p class="text-xs font-typewriter text-slate-400">Colega de Turma | 17 anos</p>
+                            </div>
+                            <span class="bg-red-950 text-red-300 text-[10px] font-typewriter border border-red-800 px-2 py-0.5 rounded">
+                                Suspeito Principal
+                            </span>
+                        </div>
+
+                        <div class="relative bg-stone-950 h-52 rounded overflow-hidden border border-stone-800 mb-4 flex items-center justify-center">
+                            <img id="dossier-img-thomas" src="" class="w-full h-full object-cover hidden">
+                            <div id="dossier-placeholder-thomas" class="flex flex-col items-center text-slate-500">
+                                <i class="fa-solid fa-user-secret text-5xl mb-2 text-red-500"></i>
+                                <span class="text-xs font-typewriter">Thomas (Colega)</span>
+                            </div>
+                            <button onclick="openPhotoUploader('thomas', 'Thomas (Colega)')" class="master-btn font-bold absolute bottom-2 right-2 bg-pink-700 hover:bg-pink-600 text-white text-xs px-3 py-1.5 rounded font-typewriter shadow-lg transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-camera"></i> 📷 Trocar Foto
+                            </button>
+                        </div>
+
+                        <div class="space-y-2 text-xs font-typewriter text-slate-300">
+                            <p><strong class="text-red-400">Evidência-Chave:</strong> Foi visto conversando com Annelise Vergara perto da floresta na noite do desaparecimento às 22h15.</p>
+                            <p><strong class="text-slate-400">Alegação do Álibi:</strong> Afirma que só conversou com ela por 5 minutos e depois foi para casa.</p>
+                            <p><strong class="text-slate-400">Nível de Suspeita:</strong></p>
+                            <div class="w-full bg-stone-800 rounded-full h-2">
+                                <div class="bg-red-600 h-2 rounded-full" style="width: 88%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suspect File: Maitê Vandewell -->
+                <div class="bg-stone-900 border-l-4 border-amber-500 rounded-r-xl p-5 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold font-typewriter text-lg text-slate-100">Maitê Vandewell</h3>
+                                <p class="text-xs font-typewriter text-slate-400">Estudante de Artes | 17 anos</p>
+                            </div>
+                            <span class="bg-amber-950 text-amber-300 text-[10px] font-typewriter border border-amber-800 px-2 py-0.5 rounded">
+                                Suspeita / Motivo
+                            </span>
+                        </div>
+
+                        <div class="relative bg-stone-950 h-52 rounded overflow-hidden border border-stone-800 mb-4 flex items-center justify-center">
+                            <img id="dossier-img-maite" src="" class="w-full h-full object-cover hidden">
+                            <div id="dossier-placeholder-maite" class="flex flex-col items-center text-slate-500">
+                                <i class="fa-solid fa-user-ninja text-5xl mb-2 text-amber-500"></i>
+                                <span class="text-xs font-typewriter">Maitê Vandewell</span>
+                            </div>
+                            <button onclick="openPhotoUploader('maite', 'Maitê Vandewell')" class="master-btn font-bold absolute bottom-2 right-2 bg-pink-700 hover:bg-pink-600 text-white text-xs px-3 py-1.5 rounded font-typewriter shadow-lg transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-camera"></i> 📷 Trocar Foto
+                            </button>
+                        </div>
+
+                        <div class="space-y-2 text-xs font-typewriter text-slate-300">
+                            <p><strong class="text-amber-400">Histórico:</strong> Sofria bullying sistemático de Annelise Vergara na escola e teve segredos expostos.</p>
+                            <p><strong class="text-slate-400">Motivação:</strong> Retribuição e vingança pelas humilhações públicas.</p>
+                            <p><strong class="text-slate-400">Nível de Suspeita:</strong></p>
+                            <div class="w-full bg-stone-800 rounded-full h-2">
+                                <div class="bg-amber-500 h-2 rounded-full" style="width: 70%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="sec-transcript" class="tab-content hidden space-y-6">
+            <div class="bg-stone-900 border border-stone-800 rounded-xl p-6 shadow-2xl">
+                <div class="border-b border-red-900/50 pb-4 mb-4 flex justify-between items-center flex-wrap gap-2">
+                    <div>
+                        <span class="text-xs font-typewriter bg-red-950 text-red-300 px-2.5 py-1 rounded border border-red-800 uppercase">
+                            DOCUMENTO OFICIAL DE INVESTIGAÇÃO
+                        </span>
+                        <h2 class="text-xl font-bold font-typewriter text-slate-100 mt-2">TRANSCRIÇÃO DO INTERROGATÓRIO DE THOMAS</h2>
+                        <p class="text-xs font-typewriter text-slate-400">Delegacia de Polícia | Data: 14 de Outubro - 22:15h</p>
+                    </div>
+
+                    <button onclick="playInterrogationAudio()" class="text-xs bg-pink-900 hover:bg-pink-800 text-pink-100 font-typewriter px-3 py-2 rounded flex items-center gap-2 transition">
+                        <i class="fa-solid fa-play" id="audio-icon"></i> Simular Áudio
+                    </button>
+                </div>
+
+                <div class="bg-stone-950 p-4 rounded border border-stone-800 font-typewriter text-xs leading-relaxed space-y-4 text-slate-300 max-h-[450px] overflow-y-auto">
+                    <p><strong class="text-red-400">[DETETIVE TANNER]:</strong> Thomas, duas testemunhas afirmam que viram você conversando com a Annelise Vergara perto da entrada da floresta por volta das 22h15. O que você tem a dizer?</p>
+                    
+                    <p><strong class="text-amber-300">[THOMAS]:</strong> Eu... sim, era eu. Mas eu juro que não fiz nada com ela! Ela me mandou uma mensagem assustada pedindo para me encontrar na orla da floresta porque não queria que ninguém visse.</p>
+
+                    <p><strong class="text-red-400">[DETETIVE TANNER]:</strong> Por que o segredo? O que ela queria?</p>
+
+                    <p><strong class="text-amber-300">[THOMAS]:</strong> Ela disse que alguém estava chantageando ela com mensagens anônimas. Falou que a Maitê Vandewell estava envolvida e que ia resolver isso naquela noite na cabana abandonada na floresta.</p>
+
+                    <p><strong class="text-red-400">[DETETIVE TANNER]:</strong> E você deixou uma garota de 17 anos entrar sozinha na floresta às dez da noite?</p>
+
+                    <p><strong class="text-amber-300">[THOMAS]:</strong> Ela insistiu que eu fosse embora! Disse que se eu fosse junto, a pessoa não apareceria. Foi a última vez que vi a Annelise.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-diary" class="tab-content hidden space-y-6">
+            <div class="bg-stone-900 border border-pink-900/40 rounded-xl p-6 shadow-2xl">
+                <div class="flex justify-between items-center border-b border-pink-900/40 pb-3 mb-4">
+                    <h2 class="text-2xl font-bold font-hand text-pink-400">Diário Secreto de Annelise Vergara</h2>
+                    <span class="text-xs font-typewriter text-slate-400"><i class="fa-solid fa-lock"></i> Entrada Protegida</span>
+                </div>
+
+                <div id="diary-lock-screen" class="bg-stone-950 p-6 rounded-lg border border-pink-900/60 text-center space-y-4">
+                    <i class="fa-solid fa-book-bookmark text-4xl text-pink-600"></i>
+                    <h3 class="font-typewriter font-bold text-slate-200 text-sm">DIGITE A SENHA DO DIÁRIO</h3>
+                    <p class="text-xs font-typewriter text-slate-400 max-w-md mx-auto">Dica: Qual o primeiro nome da menina que sofria bullying da Annelise?</p>
+                    
+                    <div class="flex justify-center gap-2 max-w-xs mx-auto">
+                        <input type="text" id="diary-pass" placeholder="Digite o nome..." class="bg-stone-900 border border-stone-700 px-3 py-1.5 rounded text-xs font-typewriter text-pink-300 outline-none focus:border-pink-500 w-full">
+                        <button onclick="unlockDiary()" class="bg-pink-700 hover:bg-pink-600 text-white font-typewriter text-xs px-4 py-1.5 rounded">
+                            Desbloquear
+                        </button>
+                    </div>
+                    <p id="diary-error" class="text-xs text-red-500 font-typewriter hidden">Senha incorreta. Tente "Maite".</p>
+                </div>
+
+                <div id="diary-content" class="hidden bg-stone-950 p-6 rounded-lg border border-pink-900/60 font-hand text-2xl text-pink-200/90 leading-relaxed space-y-4">
+                    <p class="text-xs font-typewriter text-pink-500 border-b border-pink-950 pb-2">Última Entrada no Caderno</p>
+                    <p>"Eu passei dos limites com a Maitê... Eu admito. Mas eu não fui a responsável por vazarquelas fotos no mural da escola. Alguém roubou do meu celular. Alguém assinado como '-A'."</p>
+                    <p>"Eu pedi para o Thomas me encontrar na entrada da floresta às 22h15. Se ele me traiu e contou meu segredo, eu acabo com ele."</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-map" class="tab-content hidden space-y-4">
+            <div class="bg-stone-900 border border-stone-800 rounded-xl p-5 shadow-2xl">
+                <h2 class="text-lg font-bold font-typewriter text-pink-400 mb-2">Mapa de Rosewood - Pontos do Caso</h2>
+                <p class="text-xs font-typewriter text-slate-400 mb-4">Clique nos marcadores para checar o que a investigação descobriu em cada local.</p>
+
+                <div class="relative bg-stone-950 h-96 rounded-lg border border-stone-800 overflow-hidden flex items-center justify-center p-4">
+                    <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#db2777_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+                    <!-- Map Pin 1 -->
+                    <button onclick="showMapSpot('floresta')" class="absolute top-1/3 left-1/4 bg-red-950 hover:bg-red-800 text-red-200 border border-red-600 rounded-full p-2.5 shadow-lg flex items-center gap-1.5 text-xs font-typewriter transition">
+                        <i class="fa-solid fa-tree text-red-400"></i> Orla da Floresta
+                    </button>
+
+                    <!-- Map Pin 2 -->
+                    <button onclick="showMapSpot('escola')" class="absolute bottom-1/3 left-1/2 bg-pink-950 hover:bg-pink-800 text-pink-200 border border-pink-600 rounded-full p-2.5 shadow-lg flex items-center gap-1.5 text-xs font-typewriter transition">
+                        <i class="fa-solid fa-school text-pink-400"></i> Rosewood High
+                    </button>
+
+                    <!-- Map Pin 3 -->
+                    <button onclick="showMapSpot('maite')" class="absolute top-1/4 right-1/4 bg-amber-950 hover:bg-amber-800 text-amber-200 border border-amber-600 rounded-full p-2.5 shadow-lg flex items-center gap-1.5 text-xs font-typewriter transition">
+                        <i class="fa-solid fa-house-user text-amber-400"></i> Casa de Maitê
+                    </button>
+                </div>
+
+                <div id="map-info-box" class="bg-stone-950 p-4 rounded border border-stone-800 text-xs font-typewriter text-slate-300 min-h-[70px]">
+                    Clique em um ponto acima para inspecionar os relatórios de campo.
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-cipher" class="tab-content hidden space-y-6">
+            <div class="bg-stone-900 border border-stone-800 rounded-xl p-6 shadow-2xl space-y-4">
+                <h2 class="text-lg font-bold font-typewriter text-pink-400 flex items-center gap-2">
+                    <i class="fa-solid fa-key"></i> Decodificador de Códigos e Cifras
+                </h2>
+                <p class="text-xs font-typewriter text-slate-400">Insira as mensagens cifradas enviadas por "-A" para traduzir.</p>
+
+                <div class="space-y-3 font-typewriter text-xs">
+                    <textarea id="cipher-input" rows="3" placeholder="Insira o texto codificado aqui..." class="w-full bg-stone-950 border border-stone-700 rounded p-3 text-pink-300 outline-none focus:border-pink-500"></textarea>
+
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="processCipher('rot13')" class="bg-pink-950 hover:bg-pink-800 border border-pink-700 text-pink-200 px-3 py-1.5 rounded transition">Cifra ROT13</button>
+                        <button onclick="processCipher('reverse')" class="bg-stone-800 hover:bg-stone-700 border border-stone-700 text-slate-200 px-3 py-1.5 rounded transition">Inverter Texto</button>
+                    </div>
+
+                    <div class="bg-stone-950 p-4 rounded border border-stone-800 min-h-[80px]">
+                        <span class="text-[10px] text-slate-500 uppercase block mb-1">Resultado:</span>
+                        <p id="cipher-output" class="text-sm font-bold text-slate-200">Aguardando entrada...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-notes" class="tab-content hidden space-y-4">
+            <div class="bg-stone-900 border border-stone-800 rounded-xl p-6 shadow-2xl space-y-4">
+                <h2 class="text-lg font-bold font-typewriter text-pink-400 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square"></i> Bloco de Notas dos Investigadores
+                </h2>
+                <textarea id="investigator-notes" rows="12" placeholder="Escreva suas teorias, suspeitas e anotações do caso..." class="w-full bg-stone-950 border border-stone-800 rounded p-4 font-typewriter text-xs text-slate-200 outline-none focus:border-pink-600 leading-relaxed"></textarea>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- HIDDEN FILE INPUT FOR PHOTO UPLOAD -->
+    <input type="file" id="photo-file-input" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)">
+
+    <!-- MODAL: NOVO SUSPEITO -->
+    <div id="add-suspect-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-stone-900 border border-pink-900/80 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4 font-typewriter">
+            <div class="flex justify-between items-center border-b border-stone-800 pb-3">
+                <h3 class="text-pink-400 font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Novo Suspeito do Caso
+                </h3>
+                <button onclick="closeAddSuspectModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="new-suspect-form" onsubmit="saveNewSuspect(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-300 mb-1">Nome Completo:</label>
+                    <input type="text" id="new-name" required placeholder="Ex: Lucas Mendes" class="w-full bg-stone-950 border border-stone-700 rounded p-2 text-slate-100 outline-none focus:border-pink-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-300 mb-1">Função / Relação:</label>
+                        <input type="text" id="new-role" required placeholder="Ex: Namorado / Aluno" class="w-full bg-stone-950 border border-stone-700 rounded p-2 text-slate-100 outline-none focus:border-pink-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 mb-1">Suspeita (%):</label>
+                        <input type="number" id="new-suspicion" min="0" max="100" value="50" class="w-full bg-stone-950 border border-stone-700 rounded p-2 text-slate-100 outline-none focus:border-pink-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 mb-1">Motivação / Detalhes do Caso:</label>
+                    <textarea id="new-details" rows="3" required placeholder="Descreva por que essa pessoa é suspeita ou como se conecta à vítima..." class="w-full bg-stone-950 border border-stone-700 rounded p-2 text-slate-100 outline-none focus:border-pink-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 mb-1">Foto / Imagem (Opcional):</label>
+                    <input type="file" id="new-photo" accept="image/*" class="w-full bg-stone-950 border border-stone-700 rounded p-2 text-slate-300 outline-none focus:border-pink-500 text-xs">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-stone-800">
+                    <button type="button" onclick="closeAddSuspectModal()" class="bg-stone-800 hover:bg-stone-700 text-slate-300 px-4 py-2 rounded">Cancelar</button>
+                    <button type="submit" class="bg-pink-700 hover:bg-pink-600 text-white font-bold px-4 py-2 rounded">Salvar Suspeito</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT SYSTEM -->
+    <script>
+        let isMasterMode = true;
+        let selectedTargetId = null;
+        let selectedPins = [];
+        let stringConnections = [];
+
+        const threats = [
+            `"Pensei que boas garotas não guardassem segredos macabros. - A"`,
+            `"Annelise sabia de algo... e vocês serão os próximos a saber. - A"`,
+            `"Não confiem em ninguém nesta cidade. Principalmente em quem sorri. - A"`,
+            `"O segredo da floresta não vai ficar enterrado por muito tempo. - A"`
+        ];
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-pink-700', 'text-white', 'font-bold');
+                btn.classList.add('bg-stone-800', 'text-slate-300');
+            });
+
+            const currentTab = document.getElementById(`sec-${tabId}`);
+            if (currentTab) currentTab.classList.remove('hidden');
+
+            const currentBtn = document.getElementById(`tab-${tabId}`);
+            if (currentBtn) {
+                currentBtn.classList.remove('bg-stone-800', 'text-slate-300');
+                currentBtn.classList.add('bg-pink-700', 'text-white', 'font-bold');
+            }
+
+            if (tabId === 'board') {
+                setTimeout(drawStrings, 50);
+            }
+        }
+
+        function toggleMasterMode() {
+            isMasterMode = !isMasterMode;
+            const statusText = document.getElementById('master-status-text');
+            const icon = document.getElementById('master-icon');
+            const masterBtns = document.querySelectorAll('.master-btn');
+
+            if (isMasterMode) {
+                statusText.innerText = "ATIVADO";
+                icon.className = "fa-solid fa-toggle-on";
+                masterBtns.forEach(btn => btn.style.display = 'flex');
+            } else {
+                statusText.innerText = "DESATIVADO";
+                icon.className = "fa-solid fa-toggle-off";
+                masterBtns.forEach(btn => btn.style.display = 'none');
+            }
+        }
+
+        function openPhotoUploader(targetId, name) {
+            selectedTargetId = targetId;
+            document.getElementById('photo-file-input').click();
+        }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !selectedTargetId) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imgUrl = e.target.result;
+
+                // Mural Polaroid Image
+                const boardImg = document.getElementById(`img-${selectedTargetId}`);
+                const boardPlaceholder = document.getElementById(`placeholder-${selectedTargetId}`);
+                if (boardImg && boardPlaceholder) {
+                    boardImg.src = imgUrl;
+                    boardImg.classList.remove('hidden');
+                    boardPlaceholder.classList.add('hidden');
+                }
+
+                // Dossier Image
+                const dossierImg = document.getElementById(`dossier-img-${selectedTargetId}`);
+                const dossierPlaceholder = document.getElementById(`dossier-placeholder-${selectedTargetId}`);
+                if (dossierImg && dossierPlaceholder) {
+                    dossierImg.src = imgUrl;
+                    dossierImg.classList.remove('hidden');
+                    dossierPlaceholder.classList.add('hidden');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function openAddSuspectModal() {
+            document.getElementById('add-suspect-modal').classList.remove('hidden');
+        }
+
+        function closeAddSuspectModal() {
+            document.getElementById('add-suspect-modal').classList.add('hidden');
+            document.getElementById('new-suspect-form').reset();
+        }
+
+        function saveNewSuspect(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('new-name').value;
+            const role = document.getElementById('new-role').value;
+            const suspicion = document.getElementById('new-suspicion').value;
+            const details = document.getElementById('new-details').value;
+            const photoInput = document.getElementById('new-photo');
+
+            const id = 'suspect-' + Date.now();
+
+            const createSuspectCard = (photoUrl) => {
+                // 1. Criar Polaroid no Mural
+                const boardGrid = document.getElementById('board-grid');
+                const polaroidHTML = `
+                    <div id="pin-${id}" onclick="selectPin('pin-${id}')" class="polaroid cursor-pointer relative rotate-[-1deg] p-3 rounded-sm flex flex-col justify-between">
+                        <div class="pin pin-red"></div>
+                        <div class="relative group bg-stone-900 h-44 overflow-hidden rounded border border-stone-200 flex items-center justify-center">
+                            <img id="img-${id}" src="${photoUrl || ''}" alt="${name}" class="w-full h-full object-cover ${photoUrl ? '' : 'hidden'}">
+                            <div id="placeholder-${id}" class="flex flex-col items-center justify-center text-slate-400 p-2 text-center ${photoUrl ? 'hidden' : ''}">
+                                <i class="fa-solid fa-user-secret text-4xl mb-2 text-red-500/80"></i>
+                                <span class="text-[11px] font-typewriter font-bold">${name}</span>
+                                <span class="text-[9px] text-slate-500 font-typewriter">(Sem Foto)</span>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-center">
+                            <span class="font-hand text-2xl font-bold text-slate-900 block leading-tight">${name}</span>
+                            <span class="font-typewriter text-[9px] text-red-700 uppercase font-bold tracking-widest">[ ${role.toUpperCase()} ]</span>
+                        </div>
+                        <button onclick="openPhotoUploader('${id}', '${name}'); event.stopPropagation();" class="master-btn mt-2 w-full text-xs bg-pink-700 hover:bg-pink-600 text-white font-bold py-1.5 rounded font-typewriter shadow-md transition flex items-center justify-center gap-1.5" style="display: ${isMasterMode ? 'flex' : 'none'}">
+                            <i class="fa-solid fa-camera"></i> 📷 Trocar Foto
+                        </button>
+                    </div>
+                `;
+                boardGrid.insertAdjacentHTML('beforeend', polaroidHTML);
+
+                // 2. Criar Dossiê na Aba Suspeitos
+                const suspectsGrid = document.getElementById('suspects-grid');
+                const dossierHTML = `
+                    <div class="bg-stone-900 border-l-4 border-red-600 rounded-r-xl p-5 shadow-xl flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h3 class="font-bold font-typewriter text-lg text-slate-100">${name}</h3>
+                                    <p class="text-xs font-typewriter text-slate-400">${role}</p>
+                                </div>
+                                <span class="bg-red-950 text-red-300 text-[10px] font-typewriter border border-red-800 px-2 py-0.5 rounded">
+                                    Novo Suspeito
+                                </span>
+                            </div>
+
+                            <div class="relative bg-stone-950 h-52 rounded overflow-hidden border border-stone-800 mb-4 flex items-center justify-center">
+                                <img id="dossier-img-${id}" src="${photoUrl || ''}" class="w-full h-full object-cover ${photoUrl ? '' : 'hidden'}">
+                                <div id="dossier-placeholder-${id}" class="flex flex-col items-center text-slate-500 ${photoUrl ? 'hidden' : ''}">
+                                    <i class="fa-solid fa-user-secret text-5xl mb-2 text-red-500"></i>
+                                    <span class="text-xs font-typewriter">${name}</span>
+                                </div>
+                                <button onclick="openPhotoUploader('${id}', '${name}')" class="master-btn font-bold absolute bottom-2 right-2 bg-pink-700 hover:bg-pink-600 text-white text-xs px-3 py-1.5 rounded font-typewriter shadow-lg transition flex items-center gap-1.5" style="display: ${isMasterMode ? 'flex' : 'none'}">
+                                    <i class="fa-solid fa-camera"></i> 📷 Trocar Foto
+                                </button>
+                            </div>
+
+                            <div class="space-y-2 text-xs font-typewriter text-slate-300">
+                                <p><strong class="text-red-400">Detalhes / Motivo:</strong> ${details}</p>
+                                <p><strong class="text-slate-400">Nível de Suspeita:</strong> ${suspicion}%</p>
+                                <div class="w-full bg-stone-800 rounded-full h-2">
+                                    <div class="bg-red-600 h-2 rounded-full" style="width: ${suspicion}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                suspectsGrid.insertAdjacentHTML('beforeend', dossierHTML);
+
+                closeAddSuspectModal();
+            };
+
+            if (photoInput.files && photoInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    createSuspectCard(e.target.result);
+                };
+                reader.readAsDataURL(photoInput.files[0]);
+            } else {
+                createSuspectCard(null);
+            }
+        }
+
+        function triggerAMessage() {
+            const textEl = document.getElementById('a-threat-display');
+            const randomThreat = threats[Math.floor(Math.random() * threats.length)];
+            textEl.innerText = randomThreat;
+        }
+
+        function selectPin(pinId) {
+            const index = selectedPins.indexOf(pinId);
+            if (index > -1) {
+                selectedPins.splice(index, 1);
+            } else {
+                selectedPins.push(pinId);
+            }
+
+            if (selectedPins.length === 2) {
+                const connKey = selectedPins.sort().join('---');
+                const existingIdx = stringConnections.indexOf(connKey);
+                if (existingIdx > -1) {
+                    stringConnections.splice(existingIdx, 1);
+                } else {
+                    stringConnections.push(connKey);
+                }
+                selectedPins = [];
+            }
+
+            drawStrings();
+        }
+
+        function clearStrings() {
+            stringConnections = [];
+            selectedPins = [];
+            drawStrings();
+        }
+
+        function drawStrings() {
+            const canvas = document.getElementById('string-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const board = document.getElementById('sec-board');
+
+            canvas.width = board.clientWidth;
+            canvas.height = board.clientHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            stringConnections.forEach(conn => {
+                const [id1, id2] = conn.split('---');
+                const el1 = document.getElementById(id1);
+                const el2 = document.getElementById(id2);
+
+                if (el1 && el2) {
+                    const rect1 = el1.getBoundingClientRect();
+                    const rect2 = el2.getBoundingClientRect();
+                    const boardRect = board.getBoundingClientRect();
+
+                    const x1 = rect1.left + rect1.width / 2 - boardRect.left;
+                    const y1 = rect1.top + 10 - boardRect.top;
+                    const x2 = rect2.left + rect2.width / 2 - boardRect.left;
+                    const y2 = rect2.top + 10 - boardRect.top;
+
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = '#dc2626';
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                    ctx.shadowBlur = 4;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        function unlockDiary() {
+            const pass = document.getElementById('diary-pass').value.trim().toLowerCase();
+            const err = document.getElementById('diary-error');
+            if (pass === 'maite' || pass === 'maitê') {
+                document.getElementById('diary-lock-screen').classList.add('hidden');
+                document.getElementById('diary-content').classList.remove('hidden');
+                err.classList.add('hidden');
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        function showMapSpot(spot) {
+            const box = document.getElementById('map-info-box');
+            if (spot === 'floresta') {
+                box.innerHTML = `<strong class="text-red-400">Orla da Floresta:</strong> Local onde Annelise foi vista pela última vez com Thomas. Marcas de pneu indicam a passagem de um veículo não identificado.`;
+            } else if (spot === 'escola') {
+                box.innerHTML = `<strong class="text-pink-400">Rosewood High:</strong> Local das humilhações e do vazamento de dados. O armário de Annelise foi encontrado revirado.`;
+            } else if (spot === 'maite') {
+                box.innerHTML = `<strong class="text-amber-400">Casa de Maitê:</strong> Testemunhas afirmam que Maitê saiu de casa escondida na noite do desaparecimento de Annelise.`;
+            }
+        }
+
+        function processCipher(type) {
+            const input = document.getElementById('cipher-input').value;
+            const output = document.getElementById('cipher-output');
+
+            if (!input) {
+                output.innerText = "Por favor, digite um texto.";
+                return;
+            }
+
+            if (type === 'reverse') {
+                output.innerText = input.split('').reverse().join('');
+            } else if (type === 'rot13') {
+                output.innerText = input.replace(/[a-zA-Z]/g, function(c) {
+                    return String.fromCharCode((c <= "Z" ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26);
+                });
+            }
+        }
+
+        function playInterrogationAudio() {
+            const icon = document.getElementById('audio-icon');
+            if (icon.classList.contains('fa-play')) {
+                icon.className = 'fa-solid fa-pause';
+                alert('Simulação de áudio iniciada...');
+            } else {
+                icon.className = 'fa-solid fa-play';
+            }
+        }
+
+        window.addEventListener('resize', drawStrings);
+    </script>
+</body>
+</html>
